@@ -16,7 +16,7 @@ param minimumTlsVersion string = 'TLS1_2'
 var uniqueValue = take(uniqueString(resourceGroup().id), 5)
 var storageAccountName = toLower('st${projectName}${environment}${uniqueValue}')
 
-resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+resource storageaccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
   location: location
   kind: kind
