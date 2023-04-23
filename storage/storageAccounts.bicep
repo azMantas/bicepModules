@@ -12,6 +12,10 @@ param allowSharedKeyAccess bool = false
 param isHnsEnabled bool = false
 param supportsHttpsTrafficOnly bool = true
 param minimumTlsVersion string = 'TLS1_2'
+@allowed(['Allow', 'Deny'])
+param networkAclDefaultAction string = 'Deny'
+@allowed(['AzureServices', 'Logging', 'Metrics', 'None'])
+param networkAclBypass string = 'AzureServices'
 
 var uniqueValue = take(uniqueString(resourceGroup().id), 5)
 var storageAccountName = toLower('st${projectName}${environment}${uniqueValue}')
@@ -31,8 +35,8 @@ resource storageaccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
     minimumTlsVersion: minimumTlsVersion
     supportsHttpsTrafficOnly: supportsHttpsTrafficOnly
     networkAcls: {
-      defaultAction: 'Deny'
-      bypass: 'AzureServices'
+      defaultAction: networkAclDefaultAction
+      bypass: networkAclBypass
     }
   }
 }
