@@ -11,16 +11,19 @@ param allowBlobPublicAccess bool = false
 param allowSharedKeyAccess bool = false
 param isHnsEnabled bool = false
 param supportsHttpsTrafficOnly bool = true
+param defaultToOAuthAuthentication bool = true
 param minimumTlsVersion string = 'TLS1_2'
-@allowed(['Allow', 'Deny'])
+param blobServicesContainers array = []
+@allowed([ 'Allow', 'Deny' ])
 param networkAclDefaultAction string = 'Deny'
-@allowed(['AzureServices', 'Logging', 'Metrics', 'None'])
+@allowed([ 'AzureServices', 'Logging', 'Metrics', 'None' ])
 param networkAclBypass string = 'AzureServices'
+param advancedThreatProtectionEnabled bool = false
 
 var uniqueValue = take(uniqueString(resourceGroup().id), 5)
 var storageAccountName = toLower('st${projectName}${environment}${uniqueValue}')
 
-resource storageaccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
   location: location
   kind: kind
@@ -33,6 +36,7 @@ resource storageaccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
     allowSharedKeyAccess: allowSharedKeyAccess
     isHnsEnabled: isHnsEnabled
     minimumTlsVersion: minimumTlsVersion
+    defaultToOAuthAuthentication: defaultToOAuthAuthentication
     supportsHttpsTrafficOnly: supportsHttpsTrafficOnly
     networkAcls: {
       defaultAction: networkAclDefaultAction
@@ -41,5 +45,26 @@ resource storageaccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   }
 }
 
-output storageAccountName string = storageaccount.name
-output storageAccountResourceId string = storageaccount.id
+resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' existing = {
+  name: 'default'
+  parent: storageAccount
+}
+
+resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-09-01' = [for container in blobServicesContainers: {
+  name: toLower(container)
+  parent: blobServices
+  properties: {}
+}]
+
+resource advancedThreatProtection 'Microsoft.Security/advancedThreatProtectionSettings@2019-01-01' = if (advancedThreatProtectionEnabled) {
+  name: 'current'
+  scope: storageAccount
+  properties: {
+    isEnabled: true
+  }
+}
+
+output storageAccountName string = storageAccount.name
+output storageAccountResourceId string = storageAccount.id
+output storageAccountBlobUrl string = kind == 'StorageV2' && isHnsEnabled != true ? storageAccount.properties.primaryEndpoints.blob : ''
+output storageAccountDfsUrl string = kind == 'StorageV2' && isHnsEnabled == true ? storageAccount.properties.primaryEndpoints.dfs : ''
