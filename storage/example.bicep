@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param projectName string = 'storage'
+param projectName string = 'bicepRules'
 param environment string = 'tst'
 param location string = 'westeurope'
 
@@ -93,18 +93,18 @@ module multipleStorageAccount 'storageAccounts.bicep' = [for name in multipleSto
 
 // -----------  create a resource group for each storage account  ------------------
 
-var dedicatedResourceGroup = [
+var multipleStorageAccountV2 = [
   'Sophie'
   'Jacob'
   'Avery'
 ]
 
-resource indexResourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = [for (name, index) in dedicatedResourceGroup: {
+resource indexResourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = [for (name, index) in multipleStorageAccountV2: {
   name: 'storage-${name}-${environment}'
   location: location
 }]
 
-module indexstorage 'storageAccounts.bicep' = [for (name, index) in dedicatedResourceGroup: {
+module indexStorage 'storageAccounts.bicep' = [for (name, index) in multipleStorageAccountV2: {
   name: 'multiple-${name}'
   scope: indexResourceGroup[index]
   params:{
